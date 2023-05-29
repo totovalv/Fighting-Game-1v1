@@ -1,9 +1,9 @@
 # Fighting Game 1v1 (2D)
 ![FightingGame](https://github.com/totovalv/Fighting-Game-1v1/assets/109441417/2139a78a-eef1-4b1b-9ce3-8ac7fd064913)
 This is a 1v1 2D fighting game created entirely in JavaScript and HTML. The game features vector images to create frame scripts, allowing for smooth animations and engaging gameplay.
+## To play the game, visit the [online demo](https://fighting-game-1v1.vercel.app/) 🕹️
 
 ## Table of Contents
-
 - [Installation](#installation)
 - [Game Controls](#game-controls)
 - [Features](#features)
@@ -20,7 +20,7 @@ Navigate to the project directory:
 cd fighting-game
 ```
 Open the index.html file in a web browser to start the game.
-## Game Controls
+## Game Controls 🎮
 Player 1:<br>
 
 Move left: A<br>
