@@ -27,6 +27,8 @@ Move left: A<br>
 Move right: D<br>
 Jump: W<br>
 Sword stroke: Space<br>
+<br>
+
 Player 2:<br>
 
 Move left: Left Arrow<br>
