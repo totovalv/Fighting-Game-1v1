@@ -118,23 +118,29 @@ class Fighter extends Sprite {
     this.position.x += this.velocity.x
     this.position.y += this.velocity.y
 
-    // gravity function
-    if (this.position.x == 0) {
-      this.position.x = 5
+    // apply basic physics and keep fighters within the canvas bounds
+    // horizontal boundaries
+    if (this.position.x < 0) {
+      this.position.x = 0
+    } else if (this.position.x + this.width > canvas.width) {
+      this.position.x = canvas.width - this.width
     }
-    if (this.position.x == 975) {
-      
-      this.position.x = 970
-    }  if (this.position.y <= -35) {
+
+    // vertical boundaries
+    if (this.position.y <= -35) {
+      // prevent fighters from jumping too far off the top of the screen
       this.velocity.y = 10
       this.position.y = 0
-    }   else if (
+    } else if (
       this.position.y + this.height + this.velocity.y >=
       canvas.height - 96
     ) {
+      // land on the ground
       this.velocity.y = 0
-      this.position.y = 330
-    } else this.velocity.y += gravity
+      this.position.y = canvas.height - 96 - this.height
+    } else {
+      this.velocity.y += gravity
+    }
   }
 
   attack() {
