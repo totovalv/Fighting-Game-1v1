@@ -344,6 +344,8 @@ document.querySelector('#start-button').addEventListener('click', () => {
 })
 
 window.addEventListener('keydown', (event) => {
+  if (player.health <= 0 || enemy.health <= 0) return // Block all inputs when game ends
+
   if (!player.dead) {
     switch (event.key) {
       case 'd':

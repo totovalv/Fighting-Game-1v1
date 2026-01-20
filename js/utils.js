@@ -21,10 +21,10 @@ function determineWinner({ player, enemy, timerId }) {
     document.querySelector('#displayText').innerHTML = 'Player 2 Wins'
   }
 
-  // After a delay, reload to go back to start menu
+  // Immediately reload to go back to start menu (small delay to ensure frame finishes)
   setTimeout(() => {
     window.location.reload()
-  }, 2500)
+  }, 100)
 }
 
 let timer = 60
