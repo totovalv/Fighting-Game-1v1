@@ -246,11 +246,21 @@ function resetGame() {
   player.position = { x: 0, y: 0 }
   enemy.position = { x: window.innerWidth - 50, y: 200 }
 
-  // Reset sprites
-  player.switchSprite('idle')
-  enemy.switchSprite('idle')
+  // Reset sprites manually to bypass the "death" lock
+  player.image = player.sprites.idle.image
+  player.framesMax = player.sprites.idle.framesMax
+  player.framesCurrent = 0
+
+  enemy.image = enemy.sprites.idle.image
+  enemy.framesMax = enemy.sprites.idle.framesMax
+  enemy.framesCurrent = 0
+
   player.isHit = false
   enemy.isHit = false
+
+  // Reset velocities
+  player.velocity = { x: 0, y: 0 }
+  enemy.velocity = { x: 0, y: 0 }
 
   // Reset UI
   gsap.to('#playerHealth', { width: '100%' })
