@@ -224,8 +224,50 @@ const keys = {
 
 // Game start logic moved to event listener
 
+let animationId
+let gameRunning = false
+
+function resetGame() {
+  // Stop current loops
+  window.cancelAnimationFrame(animationId)
+  clearTimeout(timerId)
+
+  // Reset timer variables
+  timer = 60
+  document.querySelector('#timer').innerHTML = timer
+
+  // Reset players
+  player.health = 100
+  enemy.health = 100
+  player.dead = false
+  enemy.dead = false
+
+  // Reset positions
+  player.position = { x: 0, y: 0 }
+  enemy.position = { x: window.innerWidth - 50, y: 200 }
+
+  // Reset sprites
+  player.switchSprite('idle')
+  enemy.switchSprite('idle')
+  player.isHit = false
+  enemy.isHit = false
+
+  // Reset UI
+  gsap.to('#playerHealth', { width: '100%' })
+  gsap.to('#enemyHealth', { width: '100%' })
+  document.querySelector('#displayText').style.display = 'none'
+  document.querySelector('#start-menu').style.display = 'flex'
+
+  gameRunning = false
+
+  // Re-run resize to ensure positions are correct for new screen size
+  resizeCanvas()
+}
+
+window.resetGame = resetGame
+
 function animate() {
-  window.requestAnimationFrame(animate)
+  animationId = window.requestAnimationFrame(animate)
   c.fillStyle = 'black'
   c.fillRect(0, 0, canvas.width, canvas.height)
   background.update()
@@ -332,12 +374,15 @@ function animate() {
   }
 
   // end game based on health
-  if (enemy.health <= 0 || player.health <= 0) {
+  if ((enemy.health <= 0 || player.health <= 0) && gameRunning) {
+    gameRunning = false
     determineWinner({ player, enemy, timerId })
   }
 }
 
 document.querySelector('#start-button').addEventListener('click', () => {
+  if (gameRunning) return
+  gameRunning = true
   document.querySelector('#start-menu').style.display = 'none'
   decreaseTimer()
   animate()
