@@ -1,12 +1,61 @@
 const canvas = document.querySelector('canvas')
 const c = canvas.getContext('2d')
 
-canvas.width = 1024
-canvas.height = 576
+// Configuration for game balance and layout
+const gameConfig = {
+  baseWidth: 1024,
+  baseHeight: 576,
+  groundOffset: 96
+}
 
-c.fillRect(0, 0, canvas.width, canvas.height)
+function resizeCanvas() {
+  canvas.width = window.innerWidth
+  canvas.height = window.innerHeight
 
-const gravity = 2
+  // Update background scale to cover the screen and center it
+  if (background.image.complete) {
+    background.scale = Math.max(
+      canvas.width / background.image.width,
+      canvas.height / background.image.height
+    )
+    background.position.x =
+      (canvas.width - background.image.width * background.scale) / 2
+    background.position.y =
+      (canvas.height - background.image.height * background.scale) / 2
+
+    // Calculate ground level based on background image (floor is at ~83.3% of original image height)
+    // Original 1024x576, floor at 480. 480/576 = 0.8333
+    window.gameGroundLevel =
+      background.position.y +
+      background.image.height * background.scale * 0.8333
+  } else {
+    window.gameGroundLevel = canvas.height - gameConfig.groundOffset
+  }
+
+  // Update shop scale relative to screen size and keep it on the ground
+  if (shop.image.complete) {
+    const currentScale = canvas.height / gameConfig.baseHeight
+    shop.scale = currentScale * 2.75
+    shop.position.x = canvas.width * 0.6 // Keep shop at 60% of width
+    // Align shop's bottom with the ground
+    shop.position.y =
+      window.gameGroundLevel - shop.image.height * shop.scale + 1 // Adjusted to ground it
+  }
+
+  // Adjust floor positions for fighters
+  if (player) {
+    player.position.y = window.gameGroundLevel - player.height
+  }
+  if (enemy) {
+    enemy.position.x = window.innerWidth - enemy.width
+    enemy.position.y = window.gameGroundLevel - enemy.height
+  }
+
+  c.fillStyle = 'black'
+  c.fillRect(0, 0, canvas.width, canvas.height)
+}
+
+const gravity = 0.7 // Reduced gravity for smoother feel on larger screens
 
 const background = new Sprite({
   position: {
@@ -28,7 +77,7 @@ const shop = new Sprite({
 
 const player = new Fighter({
   position: {
-    x: 300,
+    x: 0, // Start at the left edge
     y: 0
   },
   velocity: {
@@ -42,6 +91,7 @@ const player = new Fighter({
   imageSrc: './img/samuraiMack/Idle.png',
   framesMax: 8,
   scale: 2.5,
+  spriteFacing: 'right',
   offset: {
     x: 215,
     y: 157
@@ -78,17 +128,17 @@ const player = new Fighter({
   },
   attackBox: {
     offset: {
-      x: 100,
+      x: 75,
       y: 50
     },
-    width: 160,
+    width: 180,
     height: 50
   }
 })
 
 const enemy = new Fighter({
   position: {
-    x: 700,
+    x: window.innerWidth - 50, // Start at the right edge (collision box width is 50)
     y: 200
   },
   velocity: {
@@ -103,6 +153,7 @@ const enemy = new Fighter({
   imageSrc: './img/kenji/Idle.png',
   framesMax: 4,
   scale: 2.5,
+  spriteFacing: 'left', // Kenji naturally faces left in his sprites
   offset: {
     x: 215,
     y: 167
@@ -139,13 +190,20 @@ const enemy = new Fighter({
   },
   attackBox: {
     offset: {
-      x: -170,
+      x: 75,
       y: 50
     },
-    width: 170,
+    width: 180,
     height: 50
   }
 })
+
+// Initialize sizes
+background.image.onload = resizeCanvas
+shop.image.onload = resizeCanvas // Added shop onload to prevent floating issue
+window.addEventListener('resize', resizeCanvas)
+// Fallback if images already loaded
+if (background.image.complete && shop.image.complete) resizeCanvas()
 
 console.log(player)
 
@@ -164,7 +222,7 @@ const keys = {
   }
 }
 
-decreaseTimer()
+// Game start logic moved to event listener
 
 function animate() {
   window.requestAnimationFrame(animate)
@@ -177,19 +235,29 @@ function animate() {
   player.update()
   enemy.update()
 
+  // Update facing direction based on relative position
+  if (player.position.x < enemy.position.x) {
+    player.facing = 'right'
+    enemy.facing = 'left'
+  } else {
+    player.facing = 'left'
+    enemy.facing = 'right'
+  }
+
   player.velocity.x = 0
   enemy.velocity.x = 0
 
   // player movement
-
-  if (keys.a.pressed && player.lastKey === 'a') {
-    player.velocity.x = -5
-    player.switchSprite('run')
-  } else if (keys.d.pressed && player.lastKey === 'd') {
-    player.velocity.x = 5
-    player.switchSprite('run')
-  } else {
-    player.switchSprite('idle')
+  if (!player.dead) {
+    if (keys.a.pressed && player.lastKey === 'a') {
+      player.velocity.x = -10
+      player.switchSprite('run')
+    } else if (keys.d.pressed && player.lastKey === 'd') {
+      player.velocity.x = 10
+      player.switchSprite('run')
+    } else {
+      player.switchSprite('idle')
+    }
   }
 
   // jumping
@@ -200,14 +268,16 @@ function animate() {
   }
 
   // Enemy movement
-  if (keys.ArrowLeft.pressed && enemy.lastKey === 'ArrowLeft') {
-    enemy.velocity.x = -5
-    enemy.switchSprite('run')
-  } else if (keys.ArrowRight.pressed && enemy.lastKey === 'ArrowRight') {
-    enemy.velocity.x = 5
-    enemy.switchSprite('run')
-  } else {
-    enemy.switchSprite('idle')
+  if (!enemy.dead) {
+    if (keys.ArrowLeft.pressed && enemy.lastKey === 'ArrowLeft') {
+      enemy.velocity.x = -10
+      enemy.switchSprite('run')
+    } else if (keys.ArrowRight.pressed && enemy.lastKey === 'ArrowRight') {
+      enemy.velocity.x = 10
+      enemy.switchSprite('run')
+    } else {
+      enemy.switchSprite('idle')
+    }
   }
 
   // jumping
@@ -267,7 +337,11 @@ function animate() {
   }
 }
 
-animate()
+document.querySelector('#start-button').addEventListener('click', () => {
+  document.querySelector('#start-menu').style.display = 'none'
+  decreaseTimer()
+  animate()
+})
 
 window.addEventListener('keydown', (event) => {
   if (!player.dead) {
@@ -282,7 +356,7 @@ window.addEventListener('keydown', (event) => {
         break
       case 'w':
         player.velocity.y = -20
-   
+
         break
       case ' ':
         player.attack()
@@ -319,10 +393,10 @@ window.addEventListener('keyup', (event) => {
     case 'a':
       keys.a.pressed = false
       break
-      // case 'w':
-      //   player.velocity.y = 20
-      
-      //   break
+    // case 'w':
+    //   player.velocity.y = 20
+
+    //   break
   }
 
   // enemy keys

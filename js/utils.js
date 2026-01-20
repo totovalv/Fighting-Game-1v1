@@ -20,6 +20,11 @@ function determineWinner({ player, enemy, timerId }) {
   } else if (player.health < enemy.health) {
     document.querySelector('#displayText').innerHTML = 'Player 2 Wins'
   }
+
+  // After a delay, reload to go back to start menu
+  setTimeout(() => {
+    window.location.reload()
+  }, 2500)
 }
 
 let timer = 60

@@ -4,7 +4,8 @@ class Sprite {
     imageSrc,
     scale = 1,
     framesMax = 1,
-    offset = { x: 0, y: 0 }
+    offset = { x: 0, y: 0 },
+    spriteFacing = 'right' // Direction the character faces in the actual image file
   }) {
     this.position = position
     this.width = 50
@@ -17,20 +18,42 @@ class Sprite {
     this.framesElapsed = 0
     this.framesHold = 5
     this.offset = offset
+    this.spriteFacing = spriteFacing
+    this.facing = spriteFacing
   }
 
   draw() {
+    c.save()
+
+    const frameWidth = this.image.width / this.framesMax
+    const drawWidth = frameWidth * this.scale
+    const drawHeight = this.image.height * this.scale
+
+    const shouldFlip = this.facing !== this.spriteFacing
+
+    // Move to the character's base position
+    c.translate(this.position.x, this.position.y)
+
+    if (shouldFlip) {
+      // Flip across the character's center
+      c.translate(this.width / 2, 0)
+      c.scale(-1, 1)
+      c.translate(-this.width / 2, 0)
+    }
+
     c.drawImage(
       this.image,
-      this.framesCurrent * (this.image.width / this.framesMax),
+      this.framesCurrent * frameWidth,
       0,
-      this.image.width / this.framesMax,
+      frameWidth,
       this.image.height,
-      this.position.x - this.offset.x,
-      this.position.y - this.offset.y,
-      (this.image.width / this.framesMax) * this.scale,
-      this.image.height * this.scale
+      -this.offset.x,
+      -this.offset.y,
+      drawWidth,
+      drawHeight
     )
+
+    c.restore()
   }
 
   animateFrames() {
@@ -61,20 +84,23 @@ class Fighter extends Sprite {
     framesMax = 1,
     offset = { x: 0, y: 0 },
     sprites,
-    attackBox = { offset: {}, width: undefined, height: undefined }
+    attackBox = { offset: {}, width: undefined, height: undefined },
+    spriteFacing = 'right'
   }) {
     super({
       position,
       imageSrc,
       scale,
       framesMax,
-      offset
+      offset,
+      spriteFacing
     })
 
     this.velocity = velocity
     this.width = 50
     this.height = 150
     this.lastKey
+
     this.attackBox = {
       position: {
         x: this.position.x,
@@ -104,22 +130,25 @@ class Fighter extends Sprite {
     if (!this.dead) this.animateFrames()
 
     // attack boxes
-    this.attackBox.position.x = this.position.x + this.attackBox.offset.x
+    if (this.facing === 'left') {
+      // If mirrored, the attackBox offset and its width need to be subtracted from the flipped position
+      this.attackBox.position.x =
+        this.position.x +
+        this.width -
+        this.attackBox.offset.x -
+        this.attackBox.width
+    } else {
+      this.attackBox.position.x = this.position.x + this.attackBox.offset.x
+    }
     this.attackBox.position.y = this.position.y + this.attackBox.offset.y
-
-    // draw the attack box
-    // c.fillRect(
-    //   this.attackBox.position.x,
-    //   this.attackBox.position.y,
-    //   this.attackBox.width,
-    //   this.attackBox.height
-    // )
 
     this.position.x += this.velocity.x
     this.position.y += this.velocity.y
 
+    // Calculate dynamic ground level
+    const currentGroundLevel = window.gameGroundLevel || canvas.height - 96
+
     // apply basic physics and keep fighters within the canvas bounds
-    // horizontal boundaries
     if (this.position.x < 0) {
       this.position.x = 0
     } else if (this.position.x + this.width > canvas.width) {
@@ -128,16 +157,14 @@ class Fighter extends Sprite {
 
     // vertical boundaries
     if (this.position.y <= -35) {
-      // prevent fighters from jumping too far off the top of the screen
       this.velocity.y = 10
       this.position.y = 0
     } else if (
       this.position.y + this.height + this.velocity.y >=
-      canvas.height - 96
+      currentGroundLevel
     ) {
-      // land on the ground
       this.velocity.y = 0
-      this.position.y = canvas.height - 96 - this.height
+      this.position.y = currentGroundLevel - this.height
     } else {
       this.velocity.y += gravity
     }
